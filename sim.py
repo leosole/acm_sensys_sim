@@ -103,9 +103,10 @@ def runSimulations(traces, bs, simNum):
     print("bs distance avg: ", avgBSDist)
     print("direct delay avg: ", avgDirectDelay)
     print("bs delay avg: ", avgBSDelay)
+    print("bs/direct delay: ", avgBSDelay/avgDirectDelay)
 
 radius = 200
-propSpeed = 300000000
+propSpeed = 299792458
 bs = readBS()
 traces = readTraces()
-runSimulations(traces[0], bs, 100)
+runSimulations(traces[0], bs, 200)
