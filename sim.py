@@ -98,12 +98,13 @@ def runSimulations(traces, bs, simNum):
     avgBSDelay = avgBSDist*2/propSpeed
     avgCarDist = carDist/simNum
     avgDirectDelay = avgCarDist/propSpeed
-    print("cars avg: ", avgCars)
-    print("bs avg: ", avgBases)
-    print("bs distance avg: ", avgBSDist)
-    print("direct delay avg: ", avgDirectDelay)
-    print("bs delay avg: ", avgBSDelay)
-    print("bs/direct delay: ", avgBSDelay/avgDirectDelay)
+    print("AVERAGES")
+    print("cars reached:\t\t\t %.2f" % avgCars)
+    # print("bs avg: ", avgBases)
+    print("nearest base station distance:\t %.2f" % avgBSDist)
+    print("direct communication delay:\t", avgDirectDelay)
+    print("internet communication delay:\t", avgBSDelay)
+    print("delay ratio:\t\t\t %.2f" % (avgBSDelay/avgDirectDelay))
 
 radius = 200
 propSpeed = 299792458
