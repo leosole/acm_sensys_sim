@@ -1,6 +1,5 @@
 # Leonardo Sole - GTA
 #
-import utm
 import math
 import itertools
 import random
@@ -35,23 +34,28 @@ def createSmallFile(firstLine, lastLine): # 99239748, 99260777 -> lines to creat
 def simulateEvent(traces, bs):
     event = random.randint(0,traces.countCars())
     eventCoord = [traces.cars[event].x, traces.cars[event].y]
-    carsReached = -1
-    avgCarDist = 0
+    carsReached = []
+    farthestCar = -1
     for car in traces.cars:
         carDist = calcDist(eventCoord,[car.x, car.y])
         if carDist < radius:
-            carsReached += 1
-            avgCarDist += carDist
-    avgCarDist = avgCarDist/carsReached
-    bsReached = 0
+            carsReached.append(car)
+            if farthestCar < 0 or carDist > farthestCar:
+                farthestCar = carDist
     bsDist = -1
+    nearestBase = Car(0,0,0)
     for base in bs:
-        currDist = calcDist(eventCoord, base)
-        if currDist < radius:
-            bsReached += 1
+        currDist = calcDist(eventCoord, [base.x, base.y])
         if bsDist < 0 or currDist < bsDist:
             bsDist = currDist
-    return [carsReached, bsReached, bsDist, avgCarDist]
+            nearestBase = base
+    bsFarthestCarDist = 0
+    for car in carsReached:
+        carDist = calcDist([nearestBase.x, nearestBase.y],[car.x, car.y])
+        if carDist > bsFarthestCarDist:
+            bsFarthestCarDist = carDist
+
+    return [len(carsReached), bsDist, farthestCar, bsFarthestCarDist]
 
 def readBS():
     bs = [] # list with base stations coordinates
@@ -59,10 +63,8 @@ def readBS():
         bsLines = bsFile.readlines()
         for i in range(0, len(bsLines)):
             temp = bsLines[i].split()
-            del temp[0]
-            temp[0] = float(temp[0])
-            temp[1] = float(temp[1])
-            bs.append(temp)
+            base = Car(temp[0], float(temp[1]), float(temp[2]))
+            bs.append(base)
     return bs
 
 def readTraces():
@@ -85,29 +87,28 @@ def readTraces():
     return traces
 
 def runSimulations(traces, bs, simNum):
-    cars, bases, bsDist, carDist = 0, 0, 0, 0
+    cars, bsCarDist, bsDist, carDist = 0, 0, 0, 0
     for i in range(1, simNum):
         temp = simulateEvent(traces, bs)
         cars += temp[0]
-        bases += temp[1]
-        bsDist += temp[2]
-        carDist += temp[3]
+        bsDist += temp[1]
+        carDist += temp[2]
+        bsCarDist += temp[3]
     avgCars = cars/simNum
-    avgBases = bases/simNum
     avgBSDist = bsDist/simNum
-    avgBSDelay = avgBSDist*2/propSpeed
     avgCarDist = carDist/simNum
+    avgBSCarDist = bsCarDist/simNum
+    avgBSDelay = (avgBSDist+avgBSCarDist)/propSpeed
     avgDirectDelay = avgCarDist/propSpeed
-    print("AVERAGES")
+    print("[averages after %i simulations]" % simNum)
     print("cars reached:\t\t\t %.2f" % avgCars)
-    # print("bs avg: ", avgBases)
     print("nearest base station distance:\t %.2f" % avgBSDist)
-    print("direct communication delay:\t", avgDirectDelay)
-    print("internet communication delay:\t", avgBSDelay)
+    print("direct communication delay:\t", "{:.2e}".format(avgDirectDelay))
+    print("internet communication delay:\t", "{:.2e}".format(avgBSDelay))
     print("delay ratio:\t\t\t %.2f" % (avgBSDelay/avgDirectDelay))
 
 radius = 200
 propSpeed = 299792458
 bs = readBS()
 traces = readTraces()
-runSimulations(traces[0], bs, 200)
+runSimulations(traces[0], bs, 1000)
