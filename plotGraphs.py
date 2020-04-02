@@ -1,21 +1,17 @@
-from scipy.stats import norm
 import matplotlib
 import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
 import seaborn as sns
 import numpy as np
-import matplotlib.lines as mlines
-matplotlib.use('Agg')
 from matplotlib import rc
 from matplotlib import rcParams
 
 # Graph settings
-# rcParams['text.usetex'] = True
+rcParams['text.usetex'] = True
 rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
-# rc('text', usetex=True)
+rc('text', usetex=True)
 plt.rcParams.update()
 sns.set_context("paper")
-# sns.set(font_scale=1.5, rc={'text.usetex' : True})
+sns.set(font_scale=1.5, rc={'text.usetex' : True})
 sns.set(font_scale=1.5)
 sns.set_style('white', {'font.family':'serif', 'font.serif':'Times New Roman', 'background':'white'})
 sns.despine()
@@ -54,7 +50,6 @@ def findMax(l1, l2, l3, l4):
     all = [m1, m2, m3, m4]
     return max(all)
 
-
 def plotTimeReach():
     apReach246 = loadData("APReachT_246.txt")
     apReach500 = loadData("APReachT_500.txt")
@@ -85,40 +80,10 @@ def plotV2VReach():
     carsReached = loadData("carsReachSingle.txt")
     multiReach = loadData("carsReachMulti.txt")
     plt.figure()
-    # xmin=0
-    # xmax=5
-    # steps=5000
-    # stepsize=float(xmax-xmin)/float(steps)
-    # xpoints=[i*stepsize for i in range(int(xmin/stepsize),int(xmax/stepsize))]
-    # def countCars(data):
-    #     tot = len(data)
-    #     counted =[]
-    #     last = 0
-    #     for n in range(5000):
-    #         if n == 0:
-    #             last = data.count(n)/tot
-    #             counted.append(last)
-    #         else:
-    #             for el in data:
-    #                 temp = 0
-    #                 if el > (n-1)/1000 and el < n/1000:
-    #                     temp+=1
-    #                 last += temp/tot
-    #             counted.append(last)
-    #     return counted
-    # countedCars = countCars(carsReached)
-    # multiCars = countCars(multiReach)
-    # plt.plot(xpoints, countedCars)
-    # plt.plot(xpoints, multiCars)
 
-    # singleP = mpatches.Patch(linewidth=1, label='single hop')
-    # multiP = mpatches.Patch(linewidth=1, label='double hop')
-    # sns.kdeplot(np.array(carsReached), bw=0.4, cut=0)
-    # sns.kdeplot(np.array(multiReach), bw=0.4, cut=0)
     sns.distplot(np.array(carsReached), kde_kws={"bw":0.3, "cut":0, "linestyle":'--', "marker":'o', "markevery":0.1}, hist=False, label='single hop')
     sns.distplot(np.array(multiReach), kde_kws={"bw":0.3, "cut":0, "linestyle":'-.', "marker":'v', "markevery":0.1}, hist=False, label='double hop')
-    # sns.distplot(np.array(carsReached), hist=False)
-    # sns.distplot(np.array(multiReach), hist=False)
+
     plt.xlabel('% Cars Reached')
     plt.ylabel('Density')
     plt.legend()
@@ -130,9 +95,6 @@ def plotRSUReach():
     reach500 = loadData("APReach_500.txt", 100)
     reach1000 = loadData("APReach_1000.txt", 100)
     plt.figure()
-    # p246 = mpatches.Patch(linewidth=1, label='246 RSU')
-    # p500 = mpatches.Patch(linewidth=1, label='500 RSU')
-    # p1000 = mpatches.Patch(linewidth=1, label='1000 RSU')
     sns.distplot(np.array(reach246), kde_kws={"bw":0.3, "cut":0, "linestyle":'--', "marker":'o', "markevery":0.1}, hist=False, label='246 RSU')
     sns.distplot(np.array(reach500),kde_kws={"bw":0.3, "cut":0, "linestyle":'-.', "marker":'v', "markevery":0.1}, hist=False, label='500 RSU')
     sns.distplot(np.array(reach1000), kde_kws={"bw":0.3, "cut":0, "linestyle":':', "marker":'1', "markevery":0.1}, hist=False, label='1000 RSU')
@@ -199,5 +161,4 @@ def plotRSUDelay():
 plotRSUDelay()
 plotV2VReach()
 plotRSUReach()
-# plotAPReach()
 plotTimeReach()
