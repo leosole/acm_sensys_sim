@@ -1,3 +1,15 @@
-
+.DS_Store
 koln-pruned.tr/koln-pruned.tr
 koln_traces.tr
+*m.txt
+*.png
+old/
+FCD_Filter/
+filtered/
+graphs/
+new.txt
+*.rtf
+*XML.py
+*m.xml
+traces/
+
