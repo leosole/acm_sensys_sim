@@ -36,6 +36,7 @@ def naka():
     if a > radius:
         return radius
     return a
+
 def calcDist(pointA, pointB): # calculates de distance between two points
     aX, aY, bX, bY = pointA[0], pointA[1], pointB[0], pointB[1]
 
@@ -84,16 +85,16 @@ def simulateBSDelay(traces, bs, event):
             return ['remove', False]
     return [t, nearestBS]
 
-def findNearest(trace, bs, event):
-    eventCoord = [trace.cars[event].x, trace.cars[event].y]
-    nearDist = False
-    nearest = None
-    for base in bs:
-        dist = calcDist(eventCoord, [base.x,base.y])
-        if not nearDist or dist < nearDist:
-            nearDist = dist
-            nearest = base
-    return nearest
+def findNearest(traces, bs, car):
+    for trace in traces:
+        carInT = findCarInTrace(car, trace)
+        if carInT:
+            eventCoord = [carInT.x, carInT.y]
+            for base in bs:
+                dist = calcDist(eventCoord, [base.x,base.y])
+                if dist < naka():
+                    return base
+    return False
 
 def removeHighValues(vec):
     for el in vec:
@@ -195,7 +196,7 @@ def runSimulations(simNum, traces, bs, carsReached, timeSingle, timeMulti, multi
     for n in range(0, simNum):
         print("{0}/{1}".format(n+1, simNum))
         event = random.randint(0,traces[n].countCars() - 1)
-        base = findNearest(traces[n], bs, event)
+        base = findNearest(traces, bs, traces[n].cars[event])
         # apReach.append(baseReach(base, traces[n]))
         # carsinT += carsInTime(event, traces)
         # cars = []
@@ -207,13 +208,16 @@ def runSimulations(simNum, traces, bs, carsReached, timeSingle, timeMulti, multi
         # carsReached.append(temp[0])
         # multiReach.append(temp[2])
         # event2 = random.randint(0,len(bs) - 1)
-        bsReach += baseReachTime(base, traces)
+        if base:
+            apReach.append(baseReach(base, traces[n]))
+            # bsReach += baseReachTime(base, traces)
         # carsReachTime = []
         # for t in range(0, len(carsList)):
         #     print("{0}/{1}".format(t, len(carsList)))
         #     temp2 = simulateCarsInReach(traces[t], bs, event, carsReachTime)
         #     carsList[t] += temp2[0]/len(carsList)
         #     multiList[t] += temp2[2]/len(multiList)
+
 def saveFile(filename, data):
     with open(filename, "w") as file:
         print("open "+filename)
@@ -255,7 +259,7 @@ for bs, i in zip(bases, id):
         runSimulations(20, traces, bs, carsReached, timeSingle, timeMulti, multiReach, bsReach, carsList, multiList, carsinT, apReach)
         print("end of simulation from "+file)
     print("end simulation from AP: {0}".format(i))
-    saveFile("APReachT_"+str(i)+".txt", bsReach)
+    saveFile("APReachNew_"+str(i)+".txt", apReach)
 
 
 print("end of simulations")
