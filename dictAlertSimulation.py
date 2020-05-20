@@ -1,18 +1,19 @@
 # Leonardo Sole - GTA
 #
-print("importing libs..")
 import math
 import itertools
 import random
 from scipy.stats import nakagami
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
-import time
+import datetime
 import numpy as np
 import os
 from multiprocessing import Process
 
-simuTime = 600
+simuTime = 100
+radius = 200
+propSpeed = 299792458
 
 class Car:
     def __init__(self, id, x, y):
@@ -24,7 +25,7 @@ class Car:
 class Time:
     def __init__(self, sec):
         self.sec = sec
-        self.cars = []
+        self.cars = {}
     def countCars(self):
         return len(self.cars)
 class Graphs:
@@ -156,34 +157,40 @@ def carsInTime2hop(event, traces, time1hop, time2hop):
     cars1hop = []
     carsReached1 = []
     carsReached2 = []
+    for i, key in enumerate(traces[0].cars.keys()):
+        if i == event:
+            eoi = key
     for t in range(0, simuTime):
-        print("\t\t\t\t{0:.2f}/10 minutes".format(t/60), end='\r')
+        print("\t\t\t\t{0:.2f}/{1:d} minutes".format(t/60, simuTime/60), end='\r')
         tempList = []
-        for car in traces[t].cars:
-            tempCar = findIDInTrace(traces[0].cars[event].id, traces[t])
-            if tempCar and car.id not in carsReached1 and car.id not in tempList:
-                if car.id not in carsReached2:
-                    carDist = calcDist([tempCar.x, tempCar.y],[car.x, car.y])
-                    if carDist < 200:
-                        if carDist < naka():
-                            tempList.append(car.id)
-                            time2hop.append(t)
-                if car.id not in cars1hop:
-                    carDist = calcDist([tempCar.x, tempCar.y],[car.x, car.y])
-                    if carDist < 200:
-                        if carDist < naka():
-                            cars1hop.append(car.id)
-                            time1hop.append(t)
+        for car in traces[t].cars.values():
+            if eoi in traces[t].cars:
+                tempCar = traces[t].cars[eoi]
+                if car.id not in carsReached1 and car.id not in tempList:
+                    if car.id not in carsReached2:
+                        carDist = calcDist([tempCar.x, tempCar.y],[car.x, car.y])
+                        if carDist < 200:
+                            if carDist < naka():
+                                tempList.append(car.id)
+                                time2hop.append(t)
+                    if car.id not in cars1hop:
+                        carDist = calcDist([tempCar.x, tempCar.y],[car.x, car.y])
+                        if carDist < 200:
+                            if carDist < naka():
+                                cars1hop.append(car.id)
+                                time1hop.append(t)
             for sv in carsReached1:
-                tempCar = findIDInTrace(sv, traces[t])
-                if tempCar and car.id not in carsReached1 and car.id not in tempList and car.id not in carsReached2:
-                    carDist = calcDist([tempCar.x, tempCar.y],[car.x, car.y])
-                    if carDist < 200:
-                        if carDist < naka():
-                            carsReached2.append(car.id)
-                            time2hop.append(t)
+                if sv in traces[t].cars:
+                    tempCar = traces[t].cars[sv]
+                    if car.id not in carsReached1 and car.id not in tempList and car.id not in carsReached2:
+                        carDist = calcDist([tempCar.x, tempCar.y],[car.x, car.y])
+                        if carDist < 200:
+                            if carDist < naka():
+                                carsReached2.append(car.id)
+                                time2hop.append(t)
         for new in tempList:
             carsReached1.append(new)
+    print("\t\t\t\tdone                      ", end='\r')
 
 def baseReachTime(bs, traces, start, carsReached):
     bsCoord = [bs.x, bs.y]
@@ -287,15 +294,16 @@ def readTraces(txtFile):
         trLines = trFile.readlines()
         for line in trLines:
             temp = line.split()
+            car = Car(temp[1], float(temp[2]), float(temp[3]))
             if count == 0:
                 traces.append(Time(temp[0]))
-                traces[0].cars.append(Car(temp[1], float(temp[2]), float(temp[3])))
+                traces[0].cars[car.id]=car
                 count = 1
             elif temp[0] == traces[-1].sec:
-                traces[-1].cars.append(Car(temp[1], float(temp[2]), float(temp[3])))
+                traces[-1].cars[car.id]=car
             else:
                 traces.append(Time(temp[0]))
-                traces[-1].cars.append(Car(temp[1], float(temp[2]), float(temp[3])))
+                traces[-1].cars[car.id]=car
     return traces
 
 def loadEvents(file):
@@ -305,108 +313,6 @@ def loadEvents(file):
         for event in temp:
             events.append(int(event))
         return events
-
-def mapSim(traces, rsus, eoi, sufix):
-    rt246 = []
-    rt500 = []
-    rt1000 = []
-    rd246 = []
-    rd500 = []
-    rd1000 = []
-    routex = []
-    routey = []
-    route = []
-    t246=600
-    t500=600
-    t1000=600
-    t=0
-    event = traces[0].cars[eoi]
-    for trace in traces:
-        sv = findCarInTrace(traces[0].cars[eoi], trace)
-        if sv:
-            routex.append(sv.x)
-            routey.append(sv.y)
-            route.append(sv)
-            r=0
-            for rsu in rsus:
-                dist = calcDist([rsu.x,rsu.y],[sv.x,sv.y])
-                if dist < 200:
-                    if r < 246 and rsu not in rt246:
-                        if len(rt246) == 0:
-                            t246=t
-                        rt246.append(rsu)
-                    elif r < 500 and rsu not in rt500 and rsu not in rt246:
-                        if len(rt500) == 0:
-                            t500=t
-                        rt500.append(rsu)
-                    elif rsu not in rt1000 and rsu not in rt500 and rsu not in rt246:
-                        if len(rt1000) == 0:
-                            t1000=t
-                        rt1000.append(rsu)
-                r+=1
-        t+=1
-    if len(rt246) > 0:
-        plt.figure()
-        ax = plt.subplot()
-        ax.plot(routex, routey, color='blue', label='SV route', lw=1, zorder=0)
-        ax.scatter(event.x, event.y, color='#eb9b00', label='EoI', s=20, zorder=100, marker='X')
-        first246 = rt246[0]
-        first500 = rt246[0]
-        first1000 = rt246[0]
-        if t246>t500:
-            first500 = rt500[0]
-        rd500.append(first500)
-        if t246>t1000:
-            first1000 = rt1000[0]
-        rd1000.append(first1000)
-        r=0
-        rd246.append(first246)
-        for rsu in rsus:
-            if r < 246:
-                dist = calcDist([rsu.x,rsu.y],[first246.x,first246.y])
-                if dist < 1000:
-                    rd246.append(rsu)
-                if first246 != first500:
-                    dist = calcDist([rsu.x,rsu.y],[first500.x,first500.y])
-                if dist < 1000:
-                    rd500.append(rsu)
-                if first246 != first1000:
-                    dist = calcDist([rsu.x,rsu.y],[first1000.x,first1000.y])
-                if dist < 1000:
-                    rd1000.append(rsu)
-            elif r < 500:
-                dist = calcDist([rsu.x,rsu.y],[first500.x,first500.y])
-                if dist < 1000:
-                    rd500.append(rsu)
-                if first500 != first1000:
-                    dist = calcDist([rsu.x,rsu.y],[first1000.x,first1000.y])
-                if dist < 1000:
-                    rd1000.append(rsu)
-            else:
-                dist = calcDist([rsu.x,rsu.y],[first1000.x,first1000.y])
-                if dist < 1000:
-                    rd1000.append(rsu)
-            r+=1
-        plotRSUS(ax, rd246, 4, '#64ff61', 16, 'RSUs in 1km radius|246', 3)
-        plotRSUS(ax, rd500, 5, '#0baf07', 16, 'RSUs in 1km radius|500', 2)
-        plotRSUS(ax, rd1000, 6, '#074606', 16, 'RSUs in 1km radius|1000')
-        plotRSUS(ax, rt246, 7, '#f75252', 16, 'RSUs in route|246', 6)
-        plotRSUS(ax, rt500, 7, '#aa0505', 16, 'RSUs in route|500', 5)
-        plotRSUS(ax, rt1000, 7, '#410101', 16, 'RSUs in route|1000', 4)
-        # plt.gca().set_aspect('equal', adjustable='box')
-        plt.axis('scaled')
-        box = ax.get_position()
-        ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
-        ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0., framealpha=1, edgecolor='black', fancybox=False)
-        # plt.tight_layout(True)
-        plt.savefig(f"mapSim{sufix}.png", dpi=300, bbox_inches = "tight")
-
-def plotRSUS(ax, rsus, marker, color, s=16, label=False, z=1):
-    if len(rsus)>0:
-        if label:
-            ax.scatter(rsus[0].x, rsus[0].y, color=color, label=label, s=s, marker=marker)
-        for rsu in rsus:
-            ax.scatter(rsu.x, rsu.y, color=color, s=s, marker=marker)
 
 def runSimulations(simNum, traces, rsus, events, rsuReachS, rsuReachR):
     global percent
@@ -430,76 +336,73 @@ def runSimulations(simNum, traces, rsus, events, rsuReachS, rsuReachR):
             percent+=1
 
 def runSimulations2(traces, events, time1hop, time2hop):
-    processes = []
-    percent = 0
     for event in events:
-        print("initializing event {}".format(event), end='\r')
-        process = Process(target=carsInTime2hop, args=(event, traces, time1hop, time2hop))
-        processes.append(process)
-        process.start()
-    for process in processes:
-        print("{0:.2f}%completed".format(100*percent/len(processes)), end='\r')
-        process.join()
-        percent+=1
-        print("{0:.2f}%completed".format(100*percent/len(processes)), end='\r')
-
+        carsInTime2hop(event, traces, time1hop, time2hop)
+    appendFile("carsTime10m1hop.txt", time1hop)
+    appendFile("carsTime10m2hop.txt", time2hop)
 
 
 def saveFile(filename, data):
     with open(filename, "w") as file:
-        print("open "+filename)
+        print("writing "+filename)
         for el in data:
          file.write("{0}\n".format(el))
 
-print("starting..")
-start_time = time.process_time()
-filenames = []
-sufix = ["8am", "9am", "10am", "11am", "12am", "1pm", "2pm", "3pm", "4pm", "5pm", "6pm", "7pm", "8pm"]
-for i in range(len(sufix)):
-    filenames.append(sufix[i]+".txt")
-radius = 200
-propSpeed = 299792458
-# print ("reading rsus")
-rsus = []
-rsufiles = ["bases/bs_246.txt", "bases/bs_500.txt", "bases/bs_1000.txt"]
-for file in rsufiles:
-    rsus.append(readBS(file))
-time1hop = []
-time2hop = []
-rsuReachS = [[],[],[]]
-rsuReachR = [[],[],[]]
-n=0
-cases = ["246", "500", "1000"]
+def appendFile(filename, data):
+    with open(filename, "a") as file:
+        print("appending "+filename)
+        for el in data:
+         file.write("{0}\n".format(el))
 
-for file in filenames:
-    print(file)
-    traces = readTraces(file)
-    eoi = random.randint(0,traces[0].countCars() - 1)
-    mapSim(traces, rsus[2], eoi, sufix[n])
-    n+=1
-exit()
-
-for file in filenames:
-    print ("\nreading "+file)
-    traces = []
-    traces = readTraces(file)
-    events = loadEvents("events{0}.txt".format(sufix[n]))
-    n+=1
-    simNum = 20
-    # events = []
-    # for event in range(simNum):
-    #     events.append(random.randint(0,traces[0].countCars() - 1))
-    # saveFile("events{0}".format(file), events)
-    print("simulating")
-    # runSimulations(simNum, traces, rsus, events, rsuReachS, rsuReachR)
-    runSimulations2(traces, events, time1hop, time2hop)
-    print("end of simulation from "+file)
-id=0
-saveFile("carsTime10m1hop.txt", time1hop)
-saveFile("carsTime10m2hop.txt", time2hop)
-# for case in cases:
-#     saveFile("multipleRSUsTimeSV-{0}.txt".format(case), rsuReachS[id])
-#     id+=1
-
-print("end of simulations")
-print ("simulation time: {:.2f} minutes".format((time.process_time() - start_time)/60))
+if __name__ == '__main__':
+    print("starting..")
+    now = datetime.datetime.now()
+    print (now.strftime("%Y-%m-%d %H:%M:%S"))
+    filenames = []
+    sufix = ["8am", "9am", "10am", "11am", "12am", "1pm", "2pm", "3pm", "4pm", "5pm", "6pm", "7pm", "8pm"]
+    for suf in sufix:
+        filenames.append(suf+".txt")
+    radius = 200
+    propSpeed = 299792458
+    # print ("reading rsus")
+    # rsus = []
+    # rsufiles = ["bases/bs_246.txt", "bases/bs_500.txt", "bases/bs_1000.txt"]
+    # for file in rsufiles:
+    #     rsus.append(readBS(file))
+    time1hop = []
+    time2hop = []
+    # cases = ["246", "500", "1000"]
+    processes = []
+    percent = 0
+    totalCars = []
+    for file, suf in zip(filenames,sufix):
+        print ("\nreading "+file)
+        traces = []
+        traces = readTraces(file)
+        total = traces[0].countCars()
+        print(total)
+        totalCars.append(total)
+        # events = loadEvents("event8am.txt")
+        # events = loadEvents("events{0}.txt".format(sufix))
+        # simNum = 20
+        # events = []
+        # for event in range(simNum):
+        #     events.append(random.randint(0,traces[0].countCars() - 1))
+        # saveFile("events{0}".format(file), events)
+        # runSimulations(simNum, traces, rsus, events, rsuReachS, rsuReachR)
+        # runSimulations2(traces, events, time1hop, time2hop, sufix[n])
+        # process = Process(target=runSimulations2, args=(traces, events, time1hop, time2hop))
+        # processes.append(process)
+        # process.start()
+        # print("initialized events: {}".format(filenames.index(file)+1), end='\r')
+    # for process in processes:
+    #     process.join()
+    #     percent+=1
+    #     print("{0:.1f}% completed simulations          ".format(100*percent/len(processes)), end='\r')
+    # for case in cases:
+    #     saveFile("multipleRSUsTimeSV-{0}.txt".format(case), rsuReachS[id])
+    #     id+=1
+    print(f"average = {sum(totalCars)/len(totalCars)}")
+    print("end of simulations")
+    now = datetime.datetime.now()
+    print (now.strftime("%Y-%m-%d %H:%M:%S"))

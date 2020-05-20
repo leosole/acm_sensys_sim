@@ -4,9 +4,7 @@ import seaborn as sns
 import numpy as np
 from matplotlib import rc
 from matplotlib import rcParams
-# from matplotlib.ticker import PercentFormatter
-# from scipy.stats import expon
-# from scipy.interpolate import interp1d
+from scipy import stats
 
 
 # Graph settings
@@ -27,6 +25,8 @@ def loadData(file, const=1):
         for line in lines:
             if line != 'remove' and line != 'remove\n':
                 readData.append(float(line)*const)
+            else:
+                line = float(line)
     return readData
 
 def avg(data):
@@ -56,6 +56,20 @@ def countTotal(data, tot=False):
             counted.append(data.count(n)/tot)
         else:
             counted.append(data.count(n)/tot+counted[n-1])
+    x = list(range(int(max(data))))
+    # x.insert(0,0)
+    # counted.insert(0,0)
+    return x, counted
+
+def countTotal2(data, tot=False):
+    if not tot:
+        tot = len(data)
+    counted = []
+    for n in range(0, int(max(data))):
+        if n == 0:
+            counted.append(data.count(n)/tot)
+        else:
+            counted.append(data.count(n)/tot)
     x = list(range(int(max(data))))
     x.insert(0,0)
     counted.insert(0,0)
@@ -106,39 +120,74 @@ def findMax(l1, l2, l3, l4):
     all = [m1, m2, m3, m4]
     return max(all)
 
-def plotTimeReach():
-    apReach246 = loadData("APReachT_246.txt")
-    apReach500 = loadData("APReachT_500.txt")
-    apReach1000 = loadData("APReachT_1000.txt")
-    carsTime = loadData("carsInTime.txt")
-    x, counted = countTotal(carsTime)
+def convertStr(file):
+    readData = []
+    with open("DATA/"+file, "r") as data:
+        lines = data.readlines()
+        for line in lines:
+            readData.append(float(line)*const)
+    return readData
+
+def plotTimeReachSV():
+    apReach246 = loadData("multipleRSUsTimeSV-246.txt")
+    apReach500 = loadData("multipleRSUsTimeSV-500.txt")
+    apReach1000 = loadData("multipleRSUsTimeSV-1000.txt")
+    hop1 = loadData("carsTime10m1hop.txt")
+    hop2 = loadData("carsTime10m2hop.txt")
+    x1, counted1 = countTotal(hop1, 9*20)
+    x2, counted2 = countTotal(hop2, 9*20)
     plt.figure()
-    x246, counted246 = countTotal(apReach246)
-    x500, counted500 = countTotal(apReach500)
-    x1000, counted1000 = countTotal(apReach1000)
-    # plt.plot(x246, counted246, linestyle='--', marker='o', label='246 RSUs : average = {0:0.1f}'.format(len(apReach246)/260))
-    # plt.plot(x500, counted500, linestyle='-.', marker='v', label='500 RSUs : average = {0:0.1f}'.format(len(apReach500)/260))
-    # plt.plot(x1000, counted1000, linestyle=':', marker='1', label='1000 RSUs : average = {0:0.1f}'.format(len(apReach1000)/260))
-    # plt.plot(x, counted, linestyle='-', marker='x', label='V2V : average = {0:0.1f}'.format(len(apReach1000)/260))
+    x246, counted246 = countTotal(apReach246, 13*20)
+    x500, counted500 = countTotal(apReach500, 13*20)
+    x1000, counted1000 = countTotal(apReach1000, 13*20)
+    # plt.yscale('log')
     plt.plot(x246, counted246, linestyle='--', marker='o', label='246 RSUs', markevery=0.1)
     plt.plot(x500, counted500, linestyle='-.', marker='v', label='500 RSUs', markevery=0.1)
-    plt.plot(x1000, counted1000, linestyle=':', marker='1', label='1000 RSUs', markevery=0.1)
-    plt.plot(x, counted, linestyle='-', marker='x', label='V2V', markevery=0.1)
+    plt.plot(x1000, counted1000, linestyle=':', marker='s', label='1000 RSUs', markevery=0.1)
+    plt.plot(x1, counted1, linestyle='-', marker='d', label='V2V 1-hop', markevery=0.1)
+    plt.plot(x2, counted2, linestyle='-', marker='^', label='V2V 2-hop', markevery=0.1)
     plt.legend()
-    bound = findMax(apReach246, apReach500, apReach1000, carsTime)
-    plt.axis([-1, bound+1, 0, 1])
     plt.xlabel('Time (seconds)')
-    plt.ylabel('New Vehicles')
+    plt.ylabel('Vehicles reached')
     plt.tight_layout(True)
-    plt.savefig('graphs/TimeReach.png', dpi=300)
+    plt.savefig('graphs/TimeReachSV.png', dpi=300)
+
+def plotTimeReachRadius():
+    apReach246 = loadData("multipleRSUsTimeRadius-246.txt")
+    apReach500 = loadData("multipleRSUsTimeRadius-500.txt")
+    apReach1000 = loadData("multipleRSUsTimeRadius-1000.txt")
+    hop1 = loadData("carsInTime.txt")
+    hop2 = loadData("carsTime10m2hop.txt")
+    x1, counted1 = countTotal(hop1, 13*20)
+    x2, counted2 = countTotal(hop2, 13*20)
+    plt.figure()
+    x246, counted246 = countTotal(apReach246, 13*20)
+    x500, counted500 = countTotal(apReach500, 13*20)
+    x1000, counted1000 = countTotal(apReach1000, 13*20)
+    # plt.yscale('log')
+    plt.plot(x246, counted246, linestyle='--', marker='o', label='246 RSUs', markevery=0.1)
+    plt.plot(x500, counted500, linestyle='-.', marker='v', label='500 RSUs', markevery=0.1)
+    plt.plot(x1000, counted1000, linestyle=':', marker='s', label='1000 RSUs', markevery=0.1)
+    plt.plot(x1, counted1, linestyle='-', marker='d', label='V2V one-hop', markevery=0.1)
+    plt.plot(x2, counted2, linestyle='-', marker='^', label='V2V two-hop', markevery=0.1)
+    plt.legend()
+    plt.xlabel('Time (seconds)')
+    plt.ylabel('Vehicles reached')
+    plt.tight_layout(True)
+    plt.savefig('graphs/TimeReach10m.png', dpi=300)
+    plt.legend(loc='lower right', labelspacing=0.2, ncol=2, columnspacing=1)
+    plt.axis([0, 10, 0, 30])
+    plt.savefig('graphs/TimeReach10s.png', dpi=300)
+
+
 
 def plotV2VPDF():
     carsReached = loadData("carsReachSingle.txt")
     multiReach = loadData("carsReachMulti.txt")
     plt.figure()
     binarray = np.arange(0, 5, 0.1)
-    sns.distplot(np.array(carsReached), norm_hist=True, fit=expon, fit_kws={"color":"red", "cut":0, "linestyle":'--', "marker":'o', "markevery":0.1}, kde=False, label='single hop', hist=False, color='red')
-    sns.distplot(np.array(multiReach), norm_hist=True, fit=expon, fit_kws={"color":"green", "cut":0, "linestyle":'-.', "marker":'v', "markevery":0.1}, kde=False, label='double hop', hist=False, color='blue')
+    sns.distplot(np.array(carsReached), norm_hist=True, fit=expon, fit_kws={"color":"red", "cut":0, "linestyle":'--', "marker":'o', "markevery":0.1}, kde=False, label='1-hop', hist=False, color='red')
+    sns.distplot(np.array(multiReach), norm_hist=True, fit=expon, fit_kws={"color":"green", "cut":0, "linestyle":'-.', "marker":'v', "markevery":0.1}, kde=False, label='2-hop', hist=False, color='blue')
     # plt.hist(carsReached, weights=np.ones(len(carsReached))/len(carsReached), alpha=0.4, bins = binarray, density=False, color='red', rwidth=1, histtype='step', linewidth=2)
     # plt.hist(multiReach, weights=np.ones(len(multiReach))/len(multiReach), alpha=0.4, bins = binarray, density=False, color='green', rwidth=1, histtype='step', linewidth=2)
     plt.hist(carsReached, alpha=0.4, bins = binarray, density=True, color='red', rwidth=1, histtype='step', linewidth=2)
@@ -150,22 +199,6 @@ def plotV2VPDF():
     plt.legend()
     plt.tight_layout(True)
     plt.savefig('graphs/V2VReachPDF.png', dpi=300)
-#
-# def plotV2VHIST():
-#     carsReached = loadData("carsReachSingle.txt")
-#     multiReach = loadData("carsReachMulti.txt")
-#     plt.figure()
-#
-#     # plt.hist(carsReached, bins = 200, label = 'single hop', histtype='bar', stacked=True, fill=False, linewidth=3)
-#     # plt.hist(multiReach, bins = 200, label = 'double hop', histtype='bar', stacked=True, fill=False, linewidth=3)
-#
-#     plt.hist([carsReached, multiReach], weights=[np.ones(len(carsReached)) / len(carsReached), np.ones(len(multiReach)) / len(multiReach)], bins = 50, label = ['single hop','double hop'])
-#     plt.xlabel('% Cars Reached')
-#     plt.ylabel('Count')
-#     plt.gca().yaxis.set_major_formatter(PercentFormatter(1))
-#     plt.legend()
-#     plt.tight_layout(True)
-#     plt.savefig('graphs/V2VReachHIST.png', dpi=300)
 
 def plotRSUPDF():
     reach246 = loadData("APReachNew_246.txt")
@@ -239,16 +272,16 @@ def plotV2VHIST():
     dmarkx, dmarky = setMarkerPlace(dx, dc)
     plt.scatter(smarkx, smarky, marker='o', color='#2d84c3')
     plt.scatter(dmarkx, dmarky, marker='v', color='#d19e46')
-    plt.axvline(x=10, lw=3, marker='o', color='#2d84c3', label='single hop')
+    plt.axvline(x=10, lw=3, marker='o', color='#2d84c3', label='1-hop')
     plt.axvline(x=avgSingle, ls=':', color='#2d84c3', lw=2, zorder=10, clip_on=False, marker='o', markevery=2, label='average = {:.2f}'.format(avgSingle))
-    plt.axvline(x=10, lw=3, marker='v', color='#d19e46', label='double hop')
+    plt.axvline(x=10, lw=3, marker='v', color='#d19e46', label='2-hop')
     plt.axvline(x=avgDouble, ls=':', color='#d19e46', lw=2, zorder=10, clip_on=False, marker='v', markevery=2, label='average = {:.2f}'.format(avgDouble))
     # fs = interp1d(sx, sc, kind='cubic')
     # fd = interp1d(dx, dc, kind='cubic')
     # sxnew = np.linspace(0, max(sx), num=500, endpoint=True)
     # dxnew = np.linspace(0, max(dx), num=500, endpoint=True)
-    # plt.plot(sxnew, fs(sxnew), color='red', label='single hop', lw=2, ls='--', marker='o', markevery=0.1)
-    # plt.plot(dxnew, fd(dxnew), color='blue', label='double hop', lw=2, ls='-.', marker='v', markevery=0.1)
+    # plt.plot(sxnew, fs(sxnew), color='red', label='1-hop', lw=2, ls='--', marker='o', markevery=0.1)
+    # plt.plot(dxnew, fd(dxnew), color='blue', label='2-hop', lw=2, ls='-.', marker='v', markevery=0.1)
     plt.axis([0, 5, 0, 0.6])
     plt.legend()
     plt.xlabel('\% Cars Reached')
@@ -274,7 +307,60 @@ def plotRSUCDF():
     plt.tight_layout(True)
     plt.savefig('graphs/RSUReachCDF.png', dpi=300)
 
-def plotRSUDelay():
+def plotRSUDelayHIST():
+    multi_246 = loadData("delayMulti_246.txt")
+    single_246 = loadData("delaySingle_246.txt")
+    multi_500 = loadData("delayMulti_500.txt")
+    single_500 = loadData("delaySingle_500.txt")
+    multi_1000 = loadData("delayMulti_1000.txt")
+    single_1000 = loadData("delaySingle_1000.txt")
+    plt.figure()
+    binum=31
+    msize=14
+    s246, cs246 = countFloat(single_246, binum)
+    plt.step(x=s246, y=cs246, alpha=0.5, color='#2d84c3', where='post', lw=2)
+    s246markx, s246marky = setMarkerPlace(s246, cs246)
+    plt.axvline(x=1000, lw=2, marker='o', color='#2d84c3', label='1-hop - 246 RSUs')
+
+    s500, cs500 = countFloat(single_500, binum)
+    plt.step(x=s500, y=cs500, alpha=0.5, color='#6a2dc3', where='post', lw=2)
+    s500markx, s500marky = setMarkerPlace(s500, cs500)
+    plt.axvline(x=1000, lw=2, marker='v', color='#6a2dc3', label='1-hop - 500 RSUs')
+
+    s1000, cs1000 = countFloat(single_1000, binum)
+    plt.step(x=s1000, y=cs1000, alpha=0.5, color='#b91cd2', where='post', lw=2)
+    s1000markx, s1000marky = setMarkerPlace(s1000, cs1000)
+    plt.axvline(x=1000, lw=2, marker='s', color='#b91cd2', label='1-hop - 1000 RSUs')
+
+    m246, cm246 = countFloat(multi_246, binum)
+    plt.step(x=m246, y=cm246, alpha=0.5, color='#d16746', where='post', lw=2)
+    m246markx, m246marky = setMarkerPlace(m246, cm246)
+    plt.axvline(x=1000, lw=2, marker='p', color='#d16746', label='2-hop - 246 RSUs')
+
+    m500, cm500 = countFloat(multi_500, binum)
+    plt.step(x=m500, y=cm500, alpha=0.5, color='#d19e46', where='post', lw=2)
+    m500markx, m500marky = setMarkerPlace(m500, cm500)
+    plt.axvline(x=1000, lw=2, marker='X', color='#d19e46', label='2-hop - 500 RSUs')
+
+    m1000, cm1000 = countFloat(multi_1000, binum)
+    plt.step(x=m1000, y=cm1000, alpha=0.5, color='#ced146', where='post', lw=2)
+    m1000markx, m1000marky = setMarkerPlace(m1000, cm1000)
+    plt.axvline(x=1000, lw=2, marker='D', color='#ced146', label='2-hop - 1000 RSUs')
+
+    plt.scatter(s246markx, s246marky, marker='o', color='#2d84c3', s=msize, zorder=10)
+    plt.scatter(s500markx, s500marky, marker='v', color='#6a2dc3', s=msize, zorder=10)
+    plt.scatter(s1000markx, s1000marky, marker='s', color='#b91cd2', s=msize, zorder=10)
+    plt.scatter(m246markx, m246marky, marker='p', color='#d16746', s=msize, zorder=10)
+    plt.scatter(m500markx, m500marky, marker='X', color='#d19e46', s=msize, zorder=10)
+    plt.scatter(m1000markx, m1000marky, marker='D', color='#ced146', s=msize, zorder=10)
+    plt.axis([0, 600, 0, 0.7])
+    plt.legend()
+    plt.xlabel('Delay (seconds)')
+    plt.ylabel('Frequency')
+    plt.tight_layout(True)
+    plt.savefig('graphs/RSUdelayHIST.png', dpi=300)
+
+def plotRSUDelayCDF():
     multi_246 = loadData("delayMulti_246.txt")
     single_246 = loadData("delaySingle_246.txt")
     multi_500 = loadData("delayMulti_500.txt")
@@ -283,17 +369,18 @@ def plotRSUDelay():
     single_1000 = loadData("delaySingle_1000.txt")
     plt.figure()
     s246, cs246 = countTotal(single_246)
-    plt.plot(s246, cs246, linestyle='--', marker='o', label='single hop : 246 RSUs', markevery=0.1)
+    plt.plot(s246, cs246, linestyle=':', marker='o', label='1-hop : 246 RSUs', markevery=0.1, lw=2)
+    # plt.axvline(x=avg(single_246), ls=':', color='#2d84c3', lw=2)
     s500, cs500 = countTotal(single_500)
-    plt.plot(s500, cs500, linestyle='--', marker='v', label='single hop : 500 RSUs', markevery=0.1)
+    plt.plot(s500, cs500, linestyle=':', marker='v', label='1-hop : 500 RSUs', markevery=0.1, lw=2)
     s1000, cs1000 = countTotal(single_1000)
-    plt.plot(s1000, cs1000, linestyle='--', marker='1', label='single hop : 1000 RSUs', markevery=0.1)
+    plt.plot(s1000, cs1000, linestyle=':', marker='s', label='1-hop : 1000 RSUs', markevery=0.1, lw=2)
     m246, cm246 = countTotal(multi_246)
-    plt.plot(m246, cm246, linestyle=':', marker='o', label='double hop : 246 RSUs', markevery=0.1)
+    plt.plot(m246, cm246, linestyle='-.', marker='o', label='2-hop : 246 RSUs', markevery=0.1, lw=2)
     m500, cm500 = countTotal(multi_500)
-    plt.plot(m500, cm500, linestyle=':', marker='v', label='double hop : 500 RSUs', markevery=0.1)
+    plt.plot(m500, cm500, linestyle='-.', marker='v', label='2-hop : 500 RSUs', markevery=0.1, lw=2)
     m1000, cm1000 = countTotal(multi_1000)
-    plt.plot(m1000, cm1000, linestyle=':', marker='1', label='double hop : 1000 RSUs', markevery=0.1)
+    plt.plot(m1000, cm1000, linestyle='-.', marker='s', label='2-hop : 1000 RSUs', markevery=0.1, lw=2)
     plt.axis([-1, 600, 0, 1])
     plt.legend()
     plt.xlabel('Delay (seconds)')
@@ -301,8 +388,8 @@ def plotRSUDelay():
     plt.tight_layout(True)
     plt.savefig('graphs/RSUdelayCDF.png', dpi=300)
 
-
-plotRSUHIST()
-plotTimeReach()
-plotRSUDelay()
-plotV2VHIST()
+# plotRSUHIST()
+# plotTimeReachSV()
+plotTimeReachRadius()
+# plotRSUDelayCDF()
+# plotV2VHIST()
